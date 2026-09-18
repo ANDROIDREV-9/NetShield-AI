@@ -1,0 +1,15 @@
+# CICIDS 2017 Raw CSV files (multi-GB, not committed to git)
+*.pcap_ISCX.csv
+*.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db

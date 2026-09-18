@@ -1,0 +1,3 @@
+# models/ directory placeholder
+# Review 1: No serialized model files are committed.
+# Review 2: Trained model objects (e.g., .pkl, .joblib) will be saved here.
