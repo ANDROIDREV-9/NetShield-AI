@@ -158,5 +158,5 @@ fastapi, uvicorn, streamlit, joblib
 
 ## 👤 Author
 
-**Aniruddha Mandal — 23CSE301 Machine Learning Capstone**  
+**Aniruddha Mandal 
 Dataset: [https://www.unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)
