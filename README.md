@@ -158,5 +158,5 @@ fastapi, uvicorn, streamlit, joblib
 
 ## 👤 Author
 
-**Aniruddha Mandal 
+<br> Aniruddha  Mandal <br />
 Dataset: [https://www.unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)
