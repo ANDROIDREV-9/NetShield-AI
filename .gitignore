@@ -1,15 +1,42 @@
-# CICIDS 2017 Raw CSV files (multi-GB, not committed to git)
-*.pcap_ISCX.csv
-*.csv
-
-# Python cache
+# ── Python cache ──────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
 
-# Jupyter checkpoints
+# ── Jupyter ────────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
-# OS files
+# ── Raw data — too large for GitHub (>100 MB) ─────────────────────────────────
+*.csv
+*.pcap
+
+# ── Trained models — binary artifacts ─────────────────────────────────────────
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.pt
+
+# ── Misc OS / editor ──────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Environment ────────────────────────────────────────────────────────────────
+.env
+venv/
+env/
+.venv/
+
+# ── Temporary/scratch files ────────────────────────────────────────────────────
+nb_analysis.txt

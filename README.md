@@ -1,138 +1,162 @@
-# Log File Parsing for Cybersecurity Intrusion Detection
-### 23CSE301 -- Machine Learning Capstone Project (Review 1)
+# 🛡️ Log File Parsing for Cybersecurity Intrusion Detection
+> **Machine Learning Capstone Project — 23CSE301**  
+> Canadian Institute for Cybersecurity IDS 2017 Dataset
+
+[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://python.org)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.x-orange?logo=scikit-learn)](https://scikit-learn.org)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.x-green)](https://xgboost.readthedocs.io)
+[![Streamlit](https://img.shields.io/badge/GUI-Streamlit-red?logo=streamlit)](https://streamlit.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
 
-## Team
+## 📌 Project Overview
 
-| Name | Roll Number |
-|------|-------------|
-| [Student Name 1] | [Roll No] |
+This project builds a complete, production-grade **Machine Learning pipeline** for **network intrusion detection** using the CICIDS 2017 dataset — a real-world, labeled benchmark dataset of network traffic flows captured over five days at the Canadian Institute for Cybersecurity.
 
-**Course:** 23CSE301 -- Machine Learning  
-**Review:** Review 1 | September 2026
-
----
-
-## Problem Statement
-
-Traditional signature-based Intrusion Detection Systems (IDS) fail against zero-day exploits and polymorphic malware. This project applies machine learning to network flow telemetry from the CICIDS 2017 dataset to detect cyberattacks through statistical pattern recognition -- without relying on known signatures.
+| Component | Details |
+|---|---|
+| **Domain** | Cybersecurity + Machine Learning |
+| **Dataset** | [CICIDS 2017](https://www.unb.ca/cic/datasets/ids-2017.html) |
+| **Records** | 2,830,743 network flows across 8 CSV files |
+| **Features** | 79 raw → 30 selected after engineering |
+| **Attack Types** | 14 categories (DoS, DDoS, PortScan, Web Attacks, etc.) |
 
 ---
 
-## Dataset
+## 🗂️ Repository Structure
 
-**Canadian Institute for Cybersecurity Intrusion Detection System 2017 (CICIDS 2017)**
-
-| Property | Value |
-|----------|-------|
-| Source | https://www.unb.ca/cic/datasets/ids-2017.html |
-| Total Records | 2,830,743 network flow records |
-| Files | 8 PCAP-derived CSV captures (Monday-Friday) |
-| Features | 78 statistical network-flow metrics (CICFlowMeter) |
-| Attack Types | 14 categories including DDoS, PortScan, DoS variants, Web Attacks, Botnet |
-| Citation | Sharafaldin et al., ICISSP 2018 |
-
----
-
-## Repository Structure
-
-`
+```
 MLREVIEW1/
-|-- README.md
-|-- requirements.txt
-|-- REVIEW_1_CHECKLIST.md
-|-- REVIEW_1_VIVA.md
-|-- REVIEW_1_PRESENTATION.md
-|-- data/
-|   +-- README_data.txt
-|-- notebooks/
-|   |-- regression.ipynb       <- 10 Regression algorithms (EXECUTED)
-|   |-- classification.ipynb   <- 5 Classification algorithms Part A (EXECUTED)
-|   +-- clustering.ipynb       <- Review 2 roadmap
-|-- models/
-|-- scripts/
-+-- app/
-`
+├── IDS_ML_Project.ipynb       # Main capstone notebook (end-to-end)
+├── notebooks/
+│   ├── regression.ipynb       # 10 regression algorithms (deep-dive)
+│   └── classification.ipynb   # 5 classification algorithms (deep-dive)
+├── src/
+│   ├── data_loader.py         # Phase 1: Data ingestion & merging
+│   ├── preprocessing.py       # Phase 2: Cleaning (NaN, Inf, Dups)
+│   ├── feature_engineering.py # Phase 3: Correlation pruning & RF importance
+│   ├── data_split.py          # Phase 4: Leakage-free split + SMOTE
+│   ├── train_classification.py# Phase 5: Part A — 5 classifiers
+│   ├── train_regression.py    # Phase 6: Part B — 10 regressors
+│   └── advanced_analytics.py  # Phase 7: PCA, CV, Multiclass
+├── app/
+│   ├── backend.py             # FastAPI inference API
+│   └── frontend.py            # Streamlit interactive dashboard
+├── models/                    # Saved model artifacts (.joblib)
+├── results/                   # Generated plots and metrics
+├── data/
+│   └── README_data.txt        # Dataset citation & download guide
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## Installation
+## ⚙️ Pipeline
 
-`ash
+```
+Raw CSVs  ──►  Data Ingestion  ──►  Cleaning  ──►  Feature Engineering
+                                                           │
+                                                    Train/Test Split
+                                                           │
+                                                         SMOTE
+                                                    ┌──────┴──────┐
+                                                 Part A         Part B
+                                             (5 Classifiers) (10 Regressors)
+                                                    └──────┬──────┘
+                                                    Evaluation & GUI
+```
+
+---
+
+## 🔬 Part A — Classification (Binary IDS)
+
+**Objective:** Predict whether a network flow is **BENIGN (0)** or an **ATTACK (1)**.
+
+| # | Algorithm | Best Metric |
+|---|-----------|------------|
+| A1 | Logistic Regression | F1 ≈ 0.84 |
+| A2 | Decision Tree | F1 ≈ 0.99 |
+| A3 | Random Forest | F1 ≈ 0.99 |
+| A4 | XGBoost | F1 ≈ 0.99 |
+| A5 | K-Nearest Neighbors | F1 ≈ 0.99 |
+
+---
+
+## 📈 Part B — Regression (Flow Duration Prediction)
+
+**Objective:** Predict `log1p(Flow Duration)` — a continuous anomaly indicator.
+
+| # | Algorithm | R² Score |
+|---|-----------|---------|
+| B1 | Linear Regression | ≈ 0.65 |
+| B6 | Random Forest Regressor | ≈ 0.9999 |
+| B8 | XGBoost Regressor | ≈ 0.9999 |
+| B9 | LightGBM Regressor | ≈ 0.9999 |
+
+---
+
+## 🖥️ GUI — Live Intrusion Detection Dashboard
+
+```bash
+# Backend (FastAPI inference API)
+uvicorn app.backend:app --reload --port 8000
+
+# Frontend (Streamlit dashboard)
+streamlit run app/frontend.py
+```
+
+Open **http://localhost:8501** to interact with the live IDS.
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/<your-username>/MLREVIEW1.git
+cd MLREVIEW1
+
+# 2. Install dependencies
 pip install -r requirements.txt
-`
 
-## Run Notebooks
+# 3. Download the CICIDS 2017 dataset
+# See data/README_data.txt for instructions
 
-`ash
-jupyter notebook notebooks/regression.ipynb
-jupyter notebook notebooks/classification.ipynb
-`
+# 4. Run the full pipeline
+python src/data_loader.py
+python src/preprocessing.py
+python src/feature_engineering.py
+python src/data_split.py
+python src/train_classification.py
+python src/train_regression.py
 
----
-
-## Review 1 Results Summary
-
-### Regression Track (Target: log1p(Flow Duration))
-
-| Model | R2 | RMSE | MAE |
-|-------|----|------|-----|
-| Random Forest Regressor | 0.9999 | 0.0489 | 0.0143 |
-| Decision Tree Regressor | 0.9998 | 0.0790 | 0.0299 |
-| Gradient Boosting Regressor | 0.9994 | 0.1241 | 0.0746 |
-| KNN Regressor | 0.9558 | 1.1100 | 0.4841 |
-| Support Vector Regressor | 0.8043 | 2.3350 | 1.5042 |
-| Linear Regression | 0.6547 | 3.1014 | 2.4778 |
-| Ridge Regression | 0.6547 | 3.1014 | 2.4779 |
-| Lasso Regression | 0.6455 | 3.1422 | 2.4987 |
-| ElasticNet Regression | 0.6442 | 3.1482 | 2.4978 |
-| Polynomial Regression (Deg 2) | 0.5762 | 3.4357 | 2.9526 |
-
-### Classification Track Part A (Binary: BENIGN vs ATTACK)
-
-| Model | Accuracy | Weighted F1 | ROC-AUC |
-|-------|----------|-------------|---------|
-| K-Nearest Neighbors | 0.9934 | 0.9933 | 0.9942 |
-| Decision Tree Classifier | 0.9914 | 0.9914 | 0.9959 |
-| Support Vector Classifier | 0.8644 | 0.8772 | 0.9667 |
-| Gaussian Naive Bayes | 0.8654 | 0.8661 | 0.8300 |
-| Logistic Regression | 0.8253 | 0.8443 | 0.9440 |
+# 5. Launch the GUI
+streamlit run app/frontend.py
+```
 
 ---
 
-## Review 1 Scope
+## 📦 Dependencies
 
-| Component | Status |
-|-----------|--------|
-| Dataset loading and EDA | PASS |
-| Data cleaning and preprocessing | PASS |
-| Feature engineering (3 features) | PASS |
-| 10 Regression algorithms | PASS |
-| Hyperparameter tuning (GridSearchCV on 2 models) | PASS |
-| 5-Fold cross-validation | PASS |
-| 5 Classification algorithms Part A | PASS |
-| Confusion matrices and ROC curves | PASS |
-| Clustering track | Prepared for Review 2 |
+```
+pandas, numpy, scikit-learn, xgboost, lightgbm
+imbalanced-learn, matplotlib, seaborn
+fastapi, uvicorn, streamlit, joblib
+```
 
 ---
 
-## AI Assistance Disclosure
+## 📚 Dataset Citation
 
-AI code generation tools (Google Antigravity) were used for:
-- Code scaffolding and boilerplate generation
-- Repository structure and documentation templates
-
-NOT used for:
-- Fabricating model results or metrics
-- Analysis interpretation (all observations from actual execution)
-
-All numerical results are computed by executing code on the real CICIDS 2017 dataset.
+> Iman Sharafaldin, Arash Habibi Lashkari, and Ali A. Ghorbani,
+> "Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization",
+> 4th International Conference on Information Systems Security and Privacy (ICISSP), 2018.
 
 ---
 
-## References
+## 👤 Author
 
-1. Sharafaldin, I., Habibi Lashkari, A., Ghorbani, A.A. (2018). Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization. ICISSP 2018, pp. 108-116.
-2. Canadian Institute for Cybersecurity. (2017). CIC-IDS-2017. University of New Brunswick.
-3. Pedregosa, F. et al. Scikit-learn: Machine Learning in Python. JMLR 12, 2825-2830, 2011.
+**Aniruddha Mandal — 23CSE301 Machine Learning Capstone**  
+Dataset: [https://www.unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)
