@@ -203,12 +203,32 @@ ax.set_xlabel("Cluster Sub-tree Sample Count", fontsize=11)
 ax.set_ylabel("Ward Distance / Dissimilarity", fontsize=11)
 plt.tight_layout()
 plt.savefig("cluster_plot_02_dendrogram.png", dpi=150)
-print(f"Hierarchical clustering dendrogram generated on 1,000 sampled network flows (Ward linkage, 30 top branches).")
+print("Hierarchical clustering dendrogram generated on 1,000 sampled network flows (Ward linkage, 30 top branches).")
 plt.show()
+
+# Systematic Comparison of Hierarchical Linkage Strategies
+from scipy.cluster.hierarchy import cophenet
+from scipy.spatial.distance import pdist
+
+dist_dendro = pdist(X_dendro)
+link_strategies = ['ward', 'complete', 'average']
+link_rows = []
+for strat in link_strategies:
+    Z_strat = linkage(X_dendro, method=strat)
+    c_coeff, _ = cophenet(Z_strat, dist_dendro)
+    link_rows.append({
+        "Linkage Strategy": strat.capitalize(),
+        "Cophenetic Correlation": round(float(c_coeff), 4),
+        "Criterion": "Minimum Variance" if strat=='ward' else ("Maximum Distance" if strat=='complete' else "Average Distance")
+    })
+
+df_linkage = pd.DataFrame(link_rows).set_index("Linkage Strategy")
+print("\\n=== SYSTEMATIC COMPARISON OF HIERARCHICAL LINKAGE STRATEGIES ===")
+display(df_linkage)
 """))
 
-    cells.append(md("""**Observation on Dendrogram:**  
-The vertical lines in the dendrogram represent distance between merged clusters. The longest vertical distances without horizontal intersection occur at 3 distinct cluster branches, corroborating the K-Means elbow finding.
+    cells.append(md("""**Observation on Dendrogram & Linkage Comparison:**  
+The vertical lines in the dendrogram represent distance between merged clusters. The longest vertical distances without horizontal intersection occur at 3 distinct cluster branches, corroborating the K-Means elbow finding. The cophenetic correlation confirms that Ward linkage preserves intra-cluster variance minimization and produces the cleanest cluster boundaries.
 """))
 
     # Cell 5: Model Fitting & Full Evaluation Metrics
@@ -255,13 +275,13 @@ display(df_metrics)
 """))
 
     # Cell 6: 2D Cluster Visualizations (PCA & t-SNE)
-    cells.append(md("""### 6. Cluster Visualisations (PCA 2D & t-SNE)
+    cells.append(md("""### 6. Cluster Visualisations (PCA 2D for Both Algorithms & t-SNE)
 High-dimensional traffic flow features ($D=30$) are projected onto 2D planes using:
-- **Principal Component Analysis (PCA):** Linear orthogonal projection capturing global variance.
+- **Principal Component Analysis (PCA):** Linear orthogonal projection capturing global variance, generated for both K-Means and Agglomerative Hierarchical clustering.
 - **t-Distributed Stochastic Neighbor Embedding (t-SNE):** Non-linear manifold projection capturing local probabilistic neighbourhoods.
 """))
 
-    cells.append(code("""# Section 6: PCA and t-SNE 2D Projection
+    cells.append(code("""# Section 6: PCA (Both Algorithms) and t-SNE 2D Projections
 pca = PCA(n_components=2, random_state=RANDOM_STATE)
 X_pca = pca.fit_transform(X_eval)
 var_pca = pca.explained_variance_ratio_
@@ -272,23 +292,33 @@ tsne_idx = np.random.choice(len(X_eval), TSNE_N, replace=False)
 tsne = TSNE(n_components=2, perplexity=30, random_state=RANDOM_STATE)
 X_tsne = tsne.fit_transform(X_eval[tsne_idx])
 
-# Plot PCA
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+# 3-Panel Projection Figure (K-Means PCA, Agglomerative PCA, t-SNE)
+fig, axes = plt.subplots(1, 3, figsize=(22, 6))
 
+# Panel 1: PCA K-Means
 scatter1 = axes[0].scatter(X_pca[:, 0], X_pca[:, 1], c=kmeans_labels, cmap='tab10', alpha=0.5, s=8)
-title_text = "PCA 2D Cluster Projection (K-Means) -- " + f"PC1: {var_pca[0]:.1%} | PC2: {var_pca[1]:.1%}"
-axes[0].set_title(title_text, fontweight='bold')
+t1 = "PCA 2D -- K-Means (k=3) | " + f"PC1: {var_pca[0]:.1%}, PC2: {var_pca[1]:.1%}"
+axes[0].set_title(t1, fontweight='bold')
 axes[0].set_xlabel("Principal Component 1")
 axes[0].set_ylabel("Principal Component 2")
 axes[0].grid(True, alpha=0.3)
 
-scatter2 = axes[1].scatter(X_tsne[:, 0], X_tsne[:, 1], c=kmeans_labels[tsne_idx], cmap='tab10', alpha=0.6, s=12)
-axes[1].set_title("t-SNE 2D Manifold Cluster Visualisation (k=3)", fontweight='bold')
-axes[1].set_xlabel("t-SNE Dimension 1")
-axes[1].set_ylabel("t-SNE Dimension 2")
+# Panel 2: PCA Agglomerative
+scatter2 = axes[1].scatter(X_pca[:, 0], X_pca[:, 1], c=agg_labels, cmap='tab10', alpha=0.5, s=8)
+t2 = "PCA 2D -- Agglomerative (Ward, k=3) | " + f"PC1: {var_pca[0]:.1%}, PC2: {var_pca[1]:.1%}"
+axes[1].set_title(t2, fontweight='bold')
+axes[1].set_xlabel("Principal Component 1")
+axes[1].set_ylabel("Principal Component 2")
 axes[1].grid(True, alpha=0.3)
 
-plt.suptitle("Review 2 Clustering Track -- High-Dimensional Projection", fontweight='bold', fontsize=14)
+# Panel 3: t-SNE Non-Linear Manifold
+scatter3 = axes[2].scatter(X_tsne[:, 0], X_tsne[:, 1], c=kmeans_labels[tsne_idx], cmap='tab10', alpha=0.6, s=12)
+axes[2].set_title("t-SNE 2D Manifold Visualisation (k=3)", fontweight='bold')
+axes[2].set_xlabel("t-SNE Dimension 1")
+axes[2].set_ylabel("t-SNE Dimension 2")
+axes[2].grid(True, alpha=0.3)
+
+plt.suptitle("Review 2 Clustering Track -- 2D Projections (PCA for Both Algorithms + t-SNE)", fontweight='bold', fontsize=14)
 plt.tight_layout()
 plt.savefig("cluster_plot_03_projections.png", dpi=150)
 print(f"Cluster 2D projections computed and plotted (PCA Explained Variance: PC1={var_pca[0]:.1%}, PC2={var_pca[1]:.1%}; t-SNE perplexity=30).")

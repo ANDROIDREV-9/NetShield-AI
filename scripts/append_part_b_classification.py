@@ -175,6 +175,40 @@ tuned_f1 = f1_score(y_test, y_pred_tuned, average="weighted", zero_division=0)
 tuned_acc = accuracy_score(y_test, y_pred_tuned)
 print(f"Tuned Model Test Accuracy:   {tuned_acc:.4f}")
 print(f"Tuned Model Test Weighted F1: {tuned_f1:.4f}")
+
+# --- AdaBoost Hyperparameter Tuning (n_estimators, learning_rate) ---
+print("\\n=== HYPERPARAMETER TUNING: ADABOOST CLASSIFIER ===")
+param_grid_ada = {
+    "n_estimators": [50, 80],
+    "learning_rate": [0.05, 0.1]
+}
+grid_ada = GridSearchCV(
+    estimator=AdaBoostClassifier(random_state=RANDOM_STATE),
+    param_grid=param_grid_ada,
+    cv=3,
+    scoring="f1_weighted",
+    n_jobs=-1
+)
+grid_ada.fit(X_train_scaled.iloc[:25000], y_train.iloc[:25000])
+print(f"Optimal AdaBoost Hyperparameters: {grid_ada.best_params_}")
+print(f"Best CV Weighted F1: {grid_ada.best_score_:.4f}")
+
+# --- MLP Neural Network Hyperparameter Tuning (hidden_layer_sizes, activation) ---
+print("\\n=== HYPERPARAMETER TUNING: MLP NEURAL NETWORK ===")
+param_grid_mlp = {
+    "hidden_layer_sizes": [(32,), (64, 32)],
+    "activation": ["relu", "tanh"]
+}
+grid_mlp = GridSearchCV(
+    estimator=MLPClassifier(max_iter=60, random_state=RANDOM_STATE, early_stopping=True),
+    param_grid=param_grid_mlp,
+    cv=3,
+    scoring="f1_weighted",
+    n_jobs=-1
+)
+grid_mlp.fit(X_train_scaled.iloc[:20000], y_train.iloc[:20000])
+print(f"Optimal MLP Hyperparameters: {grid_mlp.best_params_}")
+print(f"Best CV Weighted F1: {grid_mlp.best_score_:.4f}")
 """))
 
     # Markdown: Consolidated Comparison Table Introduction
