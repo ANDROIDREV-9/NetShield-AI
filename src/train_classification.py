@@ -88,6 +88,25 @@ def train_base_models(X_train: pd.DataFrame, y_train: pd.Series, verbose: bool =
     if verbose:
         print(f"  [+] KNN trained in {elapsed}s -> Saved to models/")
 
+    # Train SVC (Requires downsampling due to O(N^2) quadratic solver scaling)
+    if verbose:
+        print(f"  Training Support Vector Classifier (SVC on subset for performance)...")
+    from sklearn.svm import SVC
+    SVC_SAMP = min(15_000, len(X_train))
+    idx_svc = np.random.default_rng(42).choice(len(X_train), SVC_SAMP, replace=False)
+    X_svc = X_train[idx_svc] if isinstance(X_train, np.ndarray) else X_train.iloc[idx_svc]
+    y_svc = y_train[idx_svc] if isinstance(y_train, np.ndarray) else y_train.iloc[idx_svc]
+
+    svc = SVC(kernel="rbf", C=10.0, class_weight="balanced", random_state=42)
+    t0 = time.time()
+    svc.fit(X_svc, y_svc)
+    elapsed = round(time.time() - t0, 2)
+
+    out_path = os.path.join(MODELS_DIR, "svc.joblib")
+    joblib.dump(svc, out_path)
+    if verbose:
+        print(f"  [+] SVC trained in {elapsed}s -> Saved to models/")
+
     if verbose:
         print("\n  Base classification models successfully trained and serialized!\n")
 

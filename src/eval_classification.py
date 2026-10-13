@@ -31,7 +31,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    AdaBoostClassifier,
+    GradientBoostingClassifier,
+    BaggingClassifier,
+)
+from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -57,31 +64,30 @@ def train_ensembles(
     verbose: bool = True,
 ) -> dict:
     """
-    Train ensemble classifiers: Random Forest and XGBoost.
-
-    Parameters
-    ----------
-    X_train : np.ndarray
-        SMOTE-balanced, scaled training features.
-    y_train : np.ndarray
-        SMOTE-balanced training labels.
-
-    Returns
-    -------
-    dict
-        Mapping of model name -> fitted sklearn/xgb model.
+    Train all 5 Review 2 Part B classifiers according to 23CSE301 Capstone Guidelines:
+      B6. Random Forest Classifier (tuned n_estimators, max_depth)
+      B7. AdaBoost Classifier (adaptive boosting with decision stumps)
+      B8. Gradient Boosting Classifier (sequential residual boosting)
+      B9. Bagging Classifier (bootstrap aggregating with Decision Tree base)
+      B10. MLP Classifier (Multi-Layer Perceptron neural network)
     """
     if verbose:
         print("=" * 65)
-        print("  PHASE 5B -- TRAINING ENSEMBLE CLASSIFIERS")
+        print("  PHASE 5B -- TRAINING REVIEW 2 PART B CLASSIFIERS (5 ALGORITHMS)")
         print("=" * 65)
 
     os.makedirs(MODELS_DIR, exist_ok=True)
     models = {}
 
-    # -- Random Forest ---------------------------------------------------------
+    # Sample for models sensitive to massive training size to ensure swift, robust convergence
+    N_SAMP = min(60_000, len(X_train))
+    idx_sub = np.random.default_rng(RANDOM_STATE).choice(len(X_train), N_SAMP, replace=False)
+    X_sub = X_train[idx_sub] if isinstance(X_train, np.ndarray) else X_train.iloc[idx_sub]
+    y_sub = y_train[idx_sub] if isinstance(y_train, np.ndarray) else y_train.iloc[idx_sub]
+
+    # -- B6: Random Forest ----------------------------------------------------
     if verbose:
-        print("  Training Random Forest Classifier...")
+        print("  [B6] Training Random Forest Classifier...")
     rf = RandomForestClassifier(
         n_estimators=100, max_depth=20, min_samples_leaf=5,
         n_jobs=-1, random_state=RANDOM_STATE, class_weight="balanced",
@@ -89,35 +95,95 @@ def train_ensembles(
     t0 = time.time()
     rf.fit(X_train, y_train)
     elapsed = round(time.time() - t0, 2)
-    models["A3 - Random Forest"] = rf
+    models["B6 - Random Forest"] = rf
     joblib.dump(rf, os.path.join(MODELS_DIR, "randomforest.joblib"))
     if verbose:
-        print(f"  [+] Random Forest trained in {elapsed}s -> Saved to models/")
+        print(f"       Trained in {elapsed}s -> Saved to models/")
 
-    # -- XGBoost ---------------------------------------------------------------
+    # -- B7: AdaBoost ---------------------------------------------------------
+    if verbose:
+        print("  [B7] Training AdaBoost Classifier...")
+    ada = AdaBoostClassifier(
+        n_estimators=80, learning_rate=0.1, random_state=RANDOM_STATE
+    )
+    t0 = time.time()
+    ada.fit(X_sub, y_sub)
+    elapsed = round(time.time() - t0, 2)
+    models["B7 - AdaBoost"] = ada
+    joblib.dump(ada, os.path.join(MODELS_DIR, "adaboost.joblib"))
+    if verbose:
+        print(f"       Trained in {elapsed}s -> Saved to models/")
+
+    # -- B8: Gradient Boosting ------------------------------------------------
     try:
         import xgboost as xgb
         if verbose:
-            print("  Training XGBoost Classifier...")
-        xgb_clf = xgb.XGBClassifier(
-            n_estimators=200, max_depth=8, learning_rate=0.1,
+            print("  [B8] Training Gradient Boosting (XGBoost Classifier)...")
+        gbm = xgb.XGBClassifier(
+            n_estimators=150, max_depth=6, learning_rate=0.1,
             subsample=0.8, colsample_bytree=0.8,
             eval_metric="logloss", random_state=RANDOM_STATE,
             n_jobs=-1, tree_method="hist",
         )
         t0 = time.time()
-        xgb_clf.fit(X_train, y_train)
+        gbm.fit(X_train, y_train)
         elapsed = round(time.time() - t0, 2)
-        models["A4 - XGBoost"] = xgb_clf
-        joblib.dump(xgb_clf, os.path.join(MODELS_DIR, "xgboost_clf.joblib"))
+        models["B8 - Gradient Boosting (XGB)"] = gbm
+        joblib.dump(gbm, os.path.join(MODELS_DIR, "gradient_boosting.joblib"))
         if verbose:
-            print(f"  [+] XGBoost trained in {elapsed}s -> Saved to models/")
+            print(f"       Trained in {elapsed}s -> Saved to models/")
     except ImportError:
         if verbose:
-            print("  [WARN] xgboost not installed, skipping.")
+            print("  [B8] Training GradientBoostingClassifier (sklearn)...")
+        gbm = GradientBoostingClassifier(
+            n_estimators=100, max_depth=5, learning_rate=0.1,
+            subsample=0.8, random_state=RANDOM_STATE
+        )
+        t0 = time.time()
+        gbm.fit(X_sub, y_sub)
+        elapsed = round(time.time() - t0, 2)
+        models["B8 - Gradient Boosting"] = gbm
+        joblib.dump(gbm, os.path.join(MODELS_DIR, "gradient_boosting.joblib"))
+        if verbose:
+            print(f"       Trained in {elapsed}s -> Saved to models/")
+
+    # -- B9: Bagging Classifier (with Decision Tree base) ---------------------
+    if verbose:
+        print("  [B9] Training Bagging Classifier (DT base)...")
+    bag = BaggingClassifier(
+        estimator=DecisionTreeClassifier(max_depth=12, min_samples_leaf=5, random_state=RANDOM_STATE),
+        n_estimators=40,
+        n_jobs=-1,
+        random_state=RANDOM_STATE,
+    )
+    t0 = time.time()
+    bag.fit(X_sub, y_sub)
+    elapsed = round(time.time() - t0, 2)
+    models["B9 - Bagging Classifier"] = bag
+    joblib.dump(bag, os.path.join(MODELS_DIR, "bagging.joblib"))
+    if verbose:
+        print(f"       Trained in {elapsed}s -> Saved to models/")
+
+    # -- B10: MLP Classifier (Neural Network) ---------------------------------
+    if verbose:
+        print("  [B10] Training MLP Classifier (Neural Network)...")
+    mlp = MLPClassifier(
+        hidden_layer_sizes=(64, 32),
+        activation="relu",
+        max_iter=100,
+        early_stopping=True,
+        random_state=RANDOM_STATE,
+    )
+    t0 = time.time()
+    mlp.fit(X_sub, y_sub)
+    elapsed = round(time.time() - t0, 2)
+    models["B10 - MLP Classifier"] = mlp
+    joblib.dump(mlp, os.path.join(MODELS_DIR, "mlp.joblib"))
+    if verbose:
+        print(f"        Trained in {elapsed}s -> Saved to models/")
 
     if verbose:
-        print("\n  Ensemble classification models trained and serialized!\n")
+        print("\n  All 5 Review 2 Part B classification models trained and serialized!\n")
     return models
 
 
@@ -351,27 +417,50 @@ if __name__ == "__main__":
     selected, _, _, _ = engineer(df_clean, save_plots=False, verbose=False)
     clf_data = split_classification(df_clean, selected, save_plots=False, verbose=False)
 
-    # Load base models from Part 6
+    # Load or train base models from Review 1 Part A (5 algorithms)
     base_models = {}
-    for fname, name in [
+    base_spec = [
         ("logisticregression.joblib", "A1 - Logistic Regression"),
-        ("decisiontree.joblib",       "A2 - Decision Tree"),
+        ("knn.joblib",                "A2 - K-Nearest Neighbors"),
         ("gaussiannb.joblib",         "A3 - Gaussian Naive Bayes"),
-        ("knn.joblib",                "A5 - K-Nearest Neighbors"),
-    ]:
+        ("decisiontree.joblib",       "A4 - Decision Tree"),
+        ("svc.joblib",                "A5 - Support Vector Machine (SVC)"),
+    ]
+
+    for fname, name in base_spec:
         fpath = os.path.join(MODELS_DIR, fname)
         if os.path.exists(fpath):
             base_models[name] = joblib.load(fpath)
+        else:
+            # Train if missing
+            print(f"  [Notice] {name} artifact not found on disk, training...")
+            if "Logistic" in name:
+                from sklearn.linear_model import LogisticRegression
+                m = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE, n_jobs=-1).fit(clf_data["X_train"], clf_data["y_train"])
+            elif "Neighbors" in name:
+                from sklearn.neighbors import KNeighborsClassifier
+                m = KNeighborsClassifier(n_neighbors=7, n_jobs=-1, algorithm="ball_tree").fit(clf_data["X_train"][:50000], clf_data["y_train"][:50000])
+            elif "Naive Bayes" in name:
+                from sklearn.naive_bayes import GaussianNB
+                m = GaussianNB().fit(clf_data["X_train"], clf_data["y_train"])
+            elif "Decision Tree" in name:
+                from sklearn.tree import DecisionTreeClassifier
+                m = DecisionTreeClassifier(max_depth=15, min_samples_leaf=10, random_state=RANDOM_STATE).fit(clf_data["X_train"], clf_data["y_train"])
+            elif "Support Vector" in name:
+                from sklearn.svm import SVC
+                m = SVC(kernel="rbf", C=10.0, class_weight="balanced", random_state=RANDOM_STATE).fit(clf_data["X_train"][:15000], clf_data["y_train"][:15000])
+            joblib.dump(m, fpath)
+            base_models[name] = m
 
-    # Train ensembles
-    ensemble_models = train_ensembles(clf_data["X_train"], clf_data["y_train"])
+    # Train all 5 Review 2 Part B models
+    part_b_models = train_ensembles(clf_data["X_train"], clf_data["y_train"])
 
-    # Merge all models
-    all_models = {**base_models, **ensemble_models}
+    # Merge into consolidated 10-model dictionary
+    all_models = {**base_models, **part_b_models}
 
-    # Evaluate all
+    # Consolidated Evaluation across all 10 algorithms (Deliverable D6 & Rubric A2)
     cdf = evaluate_all(
         all_models, clf_data["X_test"], clf_data["y_test"],
         feature_names=clf_data["feature_names"],
     )
-    print("\nClassification evaluation complete.")
+    print("\nConsolidated 10-Algorithm Classification Evaluation Complete.")

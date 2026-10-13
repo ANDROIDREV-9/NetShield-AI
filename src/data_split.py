@@ -45,7 +45,8 @@ _REG_TARGET = "Flow Duration"
 _REG_EXCLUDE = {"Flow Bytes/s", "Flow Packets/s", "Flow Duration",
                 "label_binary", "label_multi", "Label"}
 
-# -- Max sample size for regression (memory-intensive) -------------------------
+# -- Max sample size for classification & regression (memory-intensive) -------
+_CLF_SAMPLE = 150_000
 _REG_SAMPLE = 200_000
 
 
@@ -55,6 +56,7 @@ def split_classification(
     test_size: float = 0.20,
     random_state: int = 42,
     smote_k: int = 5,
+    max_sample: int = _CLF_SAMPLE,
     save_plots: bool = True,
     plots_dir: str = "results",
     verbose: bool = True,
@@ -74,6 +76,8 @@ def split_classification(
         Reproducibility seed.
     smote_k : int
         Number of nearest neighbours for SMOTE interpolation.
+    max_sample : int, optional
+        Maximum stratified sample size before splitting and SMOTE.
     save_plots : bool
         If True, save before/after SMOTE bar chart.
     plots_dir : str
@@ -96,8 +100,28 @@ def split_classification(
         print("=" * 65)
 
     t_start = time.time()
-    X = df[selected_features].copy()
-    y = df["label_binary"].copy()
+
+    # Stratified representative sampling if dataset is huge
+    if max_sample is not None and len(df) > max_sample:
+        if verbose:
+            print(f"  Stratified sampling to {max_sample:,} records for robust SMOTE & training...")
+        _, df_use = train_test_split(
+            df,
+            test_size=max_sample / len(df),
+            random_state=random_state,
+            stratify=df["label_binary"] if "label_binary" in df.columns else None,
+        )
+    else:
+        df_use = df
+
+    if "label_binary" not in df_use.columns:
+        if "Label" in df_use.columns:
+            df_use["label_binary"] = (df_use["Label"].astype(str).str.strip() != "BENIGN").astype(int)
+        elif "is_attack" in df_use.columns:
+            df_use["label_binary"] = df_use["is_attack"].astype(int)
+
+    X = df_use[selected_features].copy()
+    y = df_use["label_binary"].copy()
 
     # -- Step 1: Stratified Split ----------------------------------------------
     X_train_raw, X_test_raw, y_train, y_test = train_test_split(
