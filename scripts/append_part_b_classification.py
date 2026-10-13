@@ -265,7 +265,6 @@ axes[2].set_xlim(0.8, 1.0)
 
 plt.suptitle("Consolidated Classification Benchmark across Review 1 & Review 2 (10 Algorithms)", fontweight="bold", fontsize=14)
 plt.tight_layout()
-plt.savefig("clf_plot_11_consolidated_10_models.png", dpi=150)
 plt.show()
 """))
 
@@ -291,7 +290,6 @@ ax.set_title("Consolidated ROC Curves -- All 10 Classification Algorithms", font
 ax.legend(loc="lower right", fontsize=10)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig("clf_plot_12_consolidated_roc.png", dpi=150)
 plt.show()
 """))
 
@@ -324,7 +322,6 @@ if hasattr(gbm_clf, "feature_importances_"):
 
 plt.suptitle("Feature Importance Comparison -- Tree-Based Ensembles", fontweight="bold", fontsize=14)
 plt.tight_layout()
-plt.savefig("clf_plot_13_feature_importance_comparison.png", dpi=150)
 plt.show()
 """))
 

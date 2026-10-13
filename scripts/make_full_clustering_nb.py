@@ -74,9 +74,9 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
+get_ipython().run_line_magic('matplotlib', 'inline')
 
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
@@ -173,7 +173,6 @@ ax.set_xlabel("Number of Clusters (k)", fontsize=11)
 ax.set_ylabel("Inertia (Within-Cluster Sum of Squares)", fontsize=11)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig("cluster_plot_01_elbow_curve.png", dpi=150)
 plt.show()
 
 OPTIMAL_K = 3
@@ -202,8 +201,6 @@ ax.set_title("Hierarchical Clustering Dendrogram (Ward Linkage, Top-30 Truncated
 ax.set_xlabel("Cluster Sub-tree Sample Count", fontsize=11)
 ax.set_ylabel("Ward Distance / Dissimilarity", fontsize=11)
 plt.tight_layout()
-plt.savefig("cluster_plot_02_dendrogram.png", dpi=150)
-print("Hierarchical clustering dendrogram generated on 1,000 sampled network flows (Ward linkage, 30 top branches).")
 plt.show()
 
 # Systematic Comparison of Hierarchical Linkage Strategies
@@ -320,10 +317,9 @@ axes[2].grid(True, alpha=0.3)
 
 plt.suptitle("Review 2 Clustering Track -- 2D Projections (PCA for Both Algorithms + t-SNE)", fontweight='bold', fontsize=14)
 plt.tight_layout()
-plt.savefig("cluster_plot_03_projections.png", dpi=150)
-print(f"Cluster 2D projections computed and plotted (PCA Explained Variance: PC1={var_pca[0]:.1%}, PC2={var_pca[1]:.1%}; t-SNE perplexity=30).")
 plt.show()
-"""))
+"""
+))
 
     cells.append(md("""**Observation on Projections:**  
 The PCA projection reveals a distinct high-density cluster corresponding to normal background communication alongside elongated outlier manifolds. The non-linear t-SNE embedding confirms that network flows naturally partition into well-separated clusters with minimal inter-cluster overlap.
@@ -350,7 +346,6 @@ ax.set_title("Cluster Alignment vs. Ground-Truth Attack Labels", fontweight='bol
 ax.set_ylabel("Network Flow Count")
 ax.legend(title="Actual Traffic Type", bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
-plt.savefig("cluster_plot_04_validation.png", dpi=150)
 plt.show()
 """))
 
