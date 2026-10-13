@@ -1,15 +1,15 @@
 """
 src/preprocessing.py
 ====================
-Phase 2 — Data Cleaning Pipeline
+Phase 2 -- Data Cleaning Pipeline
 
 Applies a 5-stage cleaning process to the raw CICIDS DataFrame:
-  1. Missing Values  — drop cols >50% NaN; median-impute remainder
-  2. Infinite Values — replace Inf with column finite maximum (CICFlowMeter artifact)
-  3. Float Clipping  — clip to [-1e15, 1e15] to prevent sklearn float32 overflow
-  4. Duplicate Rows  — exact duplicate removal
-  5. Zero-Variance   — drop constant numerical columns
-  6. Label Normalisation — fix Unicode label names, create binary & multiclass targets
+  1. Missing Values  -- drop cols >50% NaN; median-impute remainder
+  2. Infinite Values -- replace Inf with column finite maximum (CICFlowMeter artifact)
+  3. Float Clipping  -- clip to [-1e15, 1e15] to prevent sklearn float32 overflow
+  4. Duplicate Rows  -- exact duplicate removal
+  5. Zero-Variance   -- drop constant numerical columns
+  6. Label Normalisation -- fix Unicode label names, create binary & multiclass targets
 
 Usage (standalone):
     python src/preprocessing.py
@@ -27,7 +27,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 
-# ── Label name normalisation map ───────────────────────────────────────────────
+# -- Label name normalisation map -----------------------------------------------
 # CICFlowMeter sometimes writes "Web Attack  Brute Force" with two spaces.
 _LABEL_MAP = {
     "Web Attack  Brute Force":   "Web Attack-Brute Force",
@@ -38,7 +38,7 @@ _LABEL_MAP = {
     "Web Attack Sql Injection":  "Web Attack-SQL Injection",
 }
 
-# ── Columns known to produce Inf (rate = bytes / Flow Duration; dur=0 → Inf) ──
+# -- Columns known to produce Inf (rate = bytes / Flow Duration; dur=0 - Inf) --
 _KNOWN_INF_COLS = ["Flow Bytes/s", "Flow Packets/s"]
 
 
@@ -62,13 +62,13 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """
     if verbose:
         print("=" * 65)
-        print("  PHASE 2 — DATA CLEANING PIPELINE")
+        print("  PHASE 2 -- DATA CLEANING PIPELINE")
         print("=" * 65)
 
     before = _snapshot(df)
     t_start = time.time()
 
-    # ── Stage 1: Missing Values ──────────────────────────────────────────────
+    # -- Stage 1: Missing Values ----------------------------------------------
     missing = df.isnull().sum()
     cols_miss = missing[missing > 0]
     if len(cols_miss):
@@ -86,7 +86,7 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         if verbose:
             print("  [1] No missing values detected.")
 
-    # ── Stage 2 & 3: Infinite Values + Clipping ──────────────────────────────
+    # -- Stage 2 & 3: Infinite Values + Clipping ------------------------------
     num_cols = df.select_dtypes(include=[np.number]).columns
     inf_report = {}
     for c in num_cols:
@@ -100,7 +100,7 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         if inf_report:
             print(f"  [2] Inf values replaced in {len(inf_report)} column(s):")
             for c, n in inf_report.items():
-                print(f"        {c}: {n:,} values → replaced with finite max")
+                print(f"        {c}: {n:,} values - replaced with finite max")
         else:
             print("  [2] No Inf values detected.")
 
@@ -111,7 +111,7 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         remaining_inf = sum(int(np.isinf(df[c]).sum()) for c in num_cols)
         print(f"  [3] Post-clip Inf count: {remaining_inf}")
 
-    # ── Stage 4: Duplicate Rows ───────────────────────────────────────────────
+    # -- Stage 4: Duplicate Rows -----------------------------------------------
     n_before_dup = len(df)
     df = df.drop_duplicates()
     n_removed = n_before_dup - len(df)
@@ -119,7 +119,7 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         print(f"  [4] Removed {n_removed:,} duplicate rows  "
               f"({100*n_removed/n_before_dup:.2f}%)")
 
-    # ── Stage 5: Zero-Variance Columns ───────────────────────────────────────
+    # -- Stage 5: Zero-Variance Columns ---------------------------------------
     num_cols = df.select_dtypes(include=[np.number]).columns
     zv_cols = num_cols[df[num_cols].std() == 0].tolist()
     if zv_cols:
@@ -130,7 +130,7 @@ def clean(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         if verbose:
             print("  [5] No zero-variance columns found.")
 
-    # ── Stage 6: Label Normalisation ─────────────────────────────────────────
+    # -- Stage 6: Label Normalisation -----------------------------------------
     df = _encode_labels(df, verbose)
 
     elapsed = round(time.time() - t_start, 2)
@@ -162,9 +162,9 @@ def _encode_labels(df: pd.DataFrame, verbose: bool) -> pd.DataFrame:
     if verbose:
         vc_b = df["label_binary"].value_counts()
         ratio = vc_b.get(0, 0) / max(vc_b.get(1, 1), 1)
-        print(f"  [6] Binary  → BENIGN: {vc_b.get(0,0):,}  |  "
+        print(f"  [6] Binary  - BENIGN: {vc_b.get(0,0):,}  |  "
               f"ATTACK: {vc_b.get(1,0):,}  (ratio {ratio:.1f}:1)")
-        print(f"  [6] Multiclass → {df['label_multi'].nunique()} unique classes")
+        print(f"  [6] Multiclass - {df['label_multi'].nunique()} unique classes")
 
     return df
 
@@ -181,15 +181,15 @@ def _snapshot(df: pd.DataFrame) -> dict:
 
 
 def _print_audit_table(before: dict, after: dict) -> None:
-    print("\n  ── CLEANING AUDIT TABLE ──────────────────────────────────────")
-    header = f"  {'':25s}  {'Before':>10s}  {'After':>10s}  {'Δ':>10s}"
+    print("\n  -- CLEANING AUDIT TABLE --------------------------------------")
+    header = f"  {'':25s}  {'Before':>10s}  {'After':>10s}  {'Delta':>10s}"
     print(header)
-    print("  " + "─" * 58)
+    print("  " + "-" * 58)
     for key in before:
-        b, a = before[key], after.get(key, "—")
-        delta = (a - b) if isinstance(a, int) else "—"
+        b, a = before[key], after.get(key, "--")
+        delta = (a - b) if isinstance(a, int) else "--"
         print(f"  {key.capitalize():25s}  {b:>10,}  {a:>10,}  {delta:>+10,}")
-    print("  " + "─" * 58)
+    print("  " + "-" * 58)
 
 
 if __name__ == "__main__":

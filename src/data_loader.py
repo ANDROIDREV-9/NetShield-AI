@@ -1,7 +1,7 @@
 """
 src/data_loader.py
 ==================
-Phase 1 — Data Collection & Understanding
+Phase 1 -- Data Collection & Understanding
 
 Loads all 8 CICIDS 2017 CSV files, concatenates them into a single
 DataFrame, standardises column names, and prints a full dataset audit.
@@ -20,7 +20,7 @@ import time
 import numpy as np
 import pandas as pd
 
-# ── Default data directory ──────────────────────────────────────────────────────
+# -- Default data directory ------------------------------------------------------
 _DEFAULT_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 # All 8 CICIDS 2017 capture files in chronological order
@@ -51,13 +51,13 @@ def load_cicids(data_dir: str = _DEFAULT_DIR, verbose: bool = True) -> pd.DataFr
     -------
     pd.DataFrame
         Concatenated raw DataFrame with stripped column names.
-        Shape ≈ (2,830,743 rows, 79 columns).
+        Shape ~= (2,830,743 rows, 79 columns).
     """
     dfs = []
     total_start = time.time()
 
     print("=" * 65)
-    print("  PHASE 1 — DATA COLLECTION & UNDERSTANDING")
+    print("  PHASE 1 -- DATA COLLECTION & UNDERSTANDING")
     print("  Dataset: CICIDS 2017 (Canadian Institute for Cybersecurity)")
     print("=" * 65)
 
@@ -98,9 +98,9 @@ def load_cicids(data_dir: str = _DEFAULT_DIR, verbose: bool = True) -> pd.DataFr
 
     total_elapsed = round(time.time() - total_start, 2)
     print(f"\n  Ingested {len(dfs)} files in {total_elapsed}s.")
-    print(f"  Aggregate raw dataset: {df.shape[0]:,} rows × {df.shape[1]} columns.\n")
+    print(f"  Aggregate raw dataset: {df.shape[0]:,} rows x {df.shape[1]} columns.\n")
 
-    # ── Dataset Audit ─────────────────────────────────────────────────────────
+    # -- Dataset Audit ---------------------------------------------------------
     _print_audit(df)
 
     return df
@@ -116,7 +116,7 @@ def _print_audit(df: pd.DataFrame) -> None:
     num_cols = df.select_dtypes(include=[np.number]).columns
     n_inf = sum(int(np.isinf(df[c]).sum()) for c in num_cols)
 
-    print("── DATASET AUDIT ──────────────────────────────────────────────")
+    print("-- DATASET AUDIT ----------------------------------------------")
     print(f"  Total Rows          : {df.shape[0]:>12,}")
     print(f"  Total Columns       : {df.shape[1]:>12,}")
     print(f"  Numerical Features  : {n_num:>12,}")
@@ -130,10 +130,11 @@ def _print_audit(df: pd.DataFrame) -> None:
         print(f"\n  Label Column: 'Label'  |  Unique classes: {len(label_counts)}")
         print("  Class Distribution:")
         for lbl, cnt in label_counts.items():
-            bar = "█" * int(cnt / label_counts.max() * 30)
-            print(f"    {str(lbl)[:35]:<35s}  {cnt:>9,}  {bar}")
+            bar = "#" * int(cnt / label_counts.max() * 30)
+            lbl_clean = str(lbl).encode("ascii", errors="replace").decode("ascii")
+            print(f"    {lbl_clean[:35]:<35s}  {cnt:>9,}  {bar}")
 
-    print("─" * 65)
+    print("-" * 65)
 
 
 if __name__ == "__main__":

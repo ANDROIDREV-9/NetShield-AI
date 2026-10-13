@@ -1,7 +1,7 @@
 """
 src/feature_engineering.py
 ===========================
-Phase 3 — Feature Engineering, Selection & Scaling
+Phase 3 -- Feature Engineering, Selection & Scaling
 
 Steps performed:
   1. Identify and report high-correlation feature pairs (|r| > 0.95)
@@ -29,16 +29,16 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 
-# ── Columns to always exclude from features ───────────────────────────────────
+# -- Columns to always exclude from features -----------------------------------
 _EXCLUDE_ALWAYS = {"Label", "label_binary", "label_multi"}
 
-# ── Correlation threshold ─────────────────────────────────────────────────────
+# -- Correlation threshold -----------------------------------------------------
 _CORR_THRESHOLD = 0.95
 
-# ── Sample size for correlation computation (full data is too slow) ───────────
+# -- Sample size for correlation computation (full data is too slow) -----------
 _CORR_SAMPLE = 50_000
 
-# ── RF importance sample size ─────────────────────────────────────────────────
+# -- RF importance sample size -------------------------------------------------
 _RF_SAMPLE = 100_000
 
 
@@ -81,21 +81,21 @@ def engineer(
     """
     if verbose:
         print("=" * 65)
-        print("  PHASE 3 — FEATURE ENGINEERING & SELECTION")
+        print("  PHASE 3 -- FEATURE ENGINEERING & SELECTION")
         print("=" * 65)
     t_start = time.time()
 
-    # ── Candidate features ────────────────────────────────────────────────────
+    # -- Candidate features ----------------------------------------------------
     all_num = df.select_dtypes(include=[np.number]).columns.tolist()
     candidate_cols = [c for c in all_num if c not in _EXCLUDE_ALWAYS]
 
     if verbose:
         print(f"  Candidate numerical features: {len(candidate_cols)}")
 
-    # ── Step 1: Correlation Analysis ─────────────────────────────────────────
+    # -- Step 1: Correlation Analysis -----------------------------------------
     high_pairs = _correlation_analysis(df, candidate_cols, random_state, verbose)
 
-    # ── Step 2: Random Forest Feature Importance ──────────────────────────────
+    # -- Step 2: Random Forest Feature Importance ------------------------------
     importances = _rf_importance(
         df, candidate_cols, random_state, verbose
     )
@@ -104,10 +104,10 @@ def engineer(
     if verbose:
         print(f"\n  Selected top {top_n} features by RF importance:")
         for i, (feat, score) in enumerate(importances.head(top_n).items(), 1):
-            bar = "█" * int(score / importances.max() * 25)
+            bar = "#" * int(score / importances.max() * 25)
             print(f"    {i:>2}. {feat:<40s}  {score:.4f}  {bar}")
 
-    # ── Step 3: StandardScaler ────────────────────────────────────────────────
+    # -- Step 3: StandardScaler ------------------------------------------------
     # NOTE: We fit the scaler here on ALL data for the feature engineering module.
     # In data_split.py, the scaler is RE-FIT strictly on X_train only.
     # This scaled version is for EDA and feature importance checks only.
@@ -119,7 +119,7 @@ def engineer(
     if verbose:
         print(f"\n  StandardScaler applied. Scaled shape: {X_scaled.shape}")
 
-    # ── Step 4: Plots ─────────────────────────────────────────────────────────
+    # -- Step 4: Plots ---------------------------------------------------------
     if save_plots:
         os.makedirs(plots_dir, exist_ok=True)
         _plot_importance(importances, top_n, plots_dir)
@@ -203,7 +203,7 @@ def _plot_importance(importances: pd.Series, top_n: int, plots_dir: str) -> None
     )
     ax.invert_yaxis()
     ax.set_title(
-        f"Top {top_n} Features — Random Forest Importance\n(CICIDS 2017)",
+        f"Top {top_n} Features -- Random Forest Importance\n(CICIDS 2017)",
         fontweight="bold", fontsize=13,
     )
     ax.set_xlabel("Importance Score", fontsize=11)

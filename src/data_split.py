@@ -1,20 +1,20 @@
 """
 src/data_split.py
 =================
-Phase 4 — Leakage-Free Train/Test Split + SMOTE Oversampling
+Phase 4 -- Leakage-Free Train/Test Split + SMOTE Oversampling
 
 Critical pipeline decisions made here:
-  ┌─────────────────────────────────────────────────────┐
-  │  SPLIT FIRST → then SMOTE only on X_train           │
-  │  This prevents synthetic samples leaking into        │
-  │  the test set (a common academic error).             │
-  └─────────────────────────────────────────────────────┘
+  +-----------------------------------------------------+
+  |  SPLIT FIRST - then SMOTE only on X_train           |
+  |  This prevents synthetic samples leaking into        |
+  |  the test set (a common academic error).             |
+  +-----------------------------------------------------+
 
 Steps:
   1. Stratified 80/20 train-test split (preserves class ratios)
   2. StandardScaler fitted STRICTLY on X_train, then applied to both
   3. SMOTE applied STRICTLY on (X_train_scaled, y_train)
-  4. Regression split (no SMOTE — regression doesn't need it)
+  4. Regression split (no SMOTE -- regression doesn't need it)
 
 Usage (standalone):
     python src/data_split.py
@@ -37,15 +37,15 @@ from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-# ── Regression target ─────────────────────────────────────────────────────────
+# -- Regression target ---------------------------------------------------------
 _REG_TARGET = "Flow Duration"
 
-# ── Leakage-risk columns to exclude from regression features ──────────────────
-# These are DERIVED from Flow Duration — using them would leak the target.
+# -- Leakage-risk columns to exclude from regression features ------------------
+# These are DERIVED from Flow Duration -- using them would leak the target.
 _REG_EXCLUDE = {"Flow Bytes/s", "Flow Packets/s", "Flow Duration",
                 "label_binary", "label_multi", "Label"}
 
-# ── Max sample size for regression (memory-intensive) ─────────────────────────
+# -- Max sample size for regression (memory-intensive) -------------------------
 _REG_SAMPLE = 200_000
 
 
@@ -84,22 +84,22 @@ def split_classification(
     Returns
     -------
     dict with keys:
-        X_train, X_test        — scaled feature matrices (numpy arrays)
-        y_train, y_test        — binary labels
-        X_train_raw, X_test_raw— unsmote'd for reference
-        scaler                 — fitted StandardScaler
-        feature_names          — list of selected_features
+        X_train, X_test        -- scaled feature matrices (numpy arrays)
+        y_train, y_test        -- binary labels
+        X_train_raw, X_test_raw-- unsmote'd for reference
+        scaler                 -- fitted StandardScaler
+        feature_names          -- list of selected_features
     """
     if verbose:
         print("=" * 65)
-        print("  PHASE 4A — CLASSIFICATION SPLIT + SMOTE")
+        print("  PHASE 4A -- CLASSIFICATION SPLIT + SMOTE")
         print("=" * 65)
 
     t_start = time.time()
     X = df[selected_features].copy()
     y = df["label_binary"].copy()
 
-    # ── Step 1: Stratified Split ──────────────────────────────────────────────
+    # -- Step 1: Stratified Split ----------------------------------------------
     X_train_raw, X_test_raw, y_train, y_test = train_test_split(
         X, y,
         test_size=test_size,
@@ -111,10 +111,10 @@ def split_classification(
         print(f"      Train: {len(X_train_raw):,}  |  Test: {len(X_test_raw):,}")
         vc_tr = y_train.value_counts()
         vc_te = y_test.value_counts()
-        print(f"      Train — BENIGN: {vc_tr.get(0,0):,}  ATTACK: {vc_tr.get(1,0):,}")
-        print(f"      Test  — BENIGN: {vc_te.get(0,0):,}  ATTACK: {vc_te.get(1,0):,}")
+        print(f"      Train -- BENIGN: {vc_tr.get(0,0):,}  ATTACK: {vc_tr.get(1,0):,}")
+        print(f"      Test  -- BENIGN: {vc_te.get(0,0):,}  ATTACK: {vc_te.get(1,0):,}")
 
-    # ── Step 2: Scale (fit on X_train ONLY) ──────────────────────────────────
+    # -- Step 2: Scale (fit on X_train ONLY) ----------------------------------
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_raw)   # fit + transform
     X_test_scaled  = scaler.transform(X_test_raw)         # transform only
@@ -122,7 +122,7 @@ def split_classification(
         print(f"\n  [2] StandardScaler fitted on X_train only (zero leakage).")
         print(f"      Scaler mean[:3]: {scaler.mean_[:3].round(4)}")
 
-    # ── Step 3: SMOTE on training set only ───────────────────────────────────
+    # -- Step 3: SMOTE on training set only -----------------------------------
     vc_before = pd.Series(y_train).value_counts()
     smote = SMOTE(random_state=random_state, k_neighbors=smote_k)
     X_train_smote, y_train_smote = smote.fit_resample(X_train_scaled, y_train)
@@ -167,21 +167,21 @@ def split_regression(
     """
     Train/test split for regression (no SMOTE needed).
 
-    Target: log1p(Flow Duration) — log-transformed to normalise skewed distribution.
+    Target: log1p(Flow Duration) -- log-transformed to normalise skewed distribution.
     Anti-leakage: Flow Duration itself, Flow Bytes/s, Flow Packets/s excluded
                   from the feature set.
 
     Returns
     -------
     dict with keys:
-        Xr_train, Xr_test — scaled feature arrays
-        yr_train, yr_test — log1p-transformed target arrays
-        scaler_reg        — fitted StandardScaler
-        reg_features      — feature names used
+        Xr_train, Xr_test -- scaled feature arrays
+        yr_train, yr_test -- log1p-transformed target arrays
+        scaler_reg        -- fitted StandardScaler
+        reg_features      -- feature names used
     """
     if verbose:
         print("=" * 65)
-        print("  PHASE 4B — REGRESSION SPLIT (no SMOTE)")
+        print("  PHASE 4B -- REGRESSION SPLIT (no SMOTE)")
         print("=" * 65)
 
     # Regression features = selected features MINUS leakage columns
@@ -268,7 +268,7 @@ def _plot_smote(vc_before: pd.Series, vc_after: pd.Series, plots_dir: str) -> No
                 ha="center", va="bottom", fontweight="bold",
             )
     plt.suptitle(
-        "Class Imbalance Handling — SMOTE (Training Set Only)",
+        "Class Imbalance Handling -- SMOTE (Training Set Only)",
         fontsize=13, fontweight="bold",
     )
     plt.tight_layout()

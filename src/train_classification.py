@@ -1,7 +1,7 @@
 """
 src/train_classification.py
 ===========================
-Phase 5A — Classification Track (Base Models)
+Phase 5A -- Classification Track (Base Models)
 
 Trains baseline binary classification models:
   1. Logistic Regression
@@ -26,7 +26,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-# ── Import pipeline modules ───────────────────────────────────────────────────
+# -- Import pipeline modules ---------------------------------------------------
 from data_loader import load_cicids
 from data_split import split_classification
 from feature_engineering import engineer
@@ -40,7 +40,7 @@ def train_base_models(X_train: pd.DataFrame, y_train: pd.Series, verbose: bool =
     """Train baseline classifiers and save them to disk."""
     if verbose:
         print("=" * 65)
-        print("  PHASE 5A — TRAINING BASE CLASSIFIERS")
+        print("  PHASE 5A -- TRAINING BASE CLASSIFIERS")
         print("=" * 65)
 
     models = {
