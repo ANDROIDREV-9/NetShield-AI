@@ -156,7 +156,7 @@ Access the dashboard at **http://localhost:8501** (API documentation available a
 ### Automated App Testing
 Run the test suite to verify end-to-end functionality:
 ```bash
-python -m pytest tests/test_app.py -v
+python tests/test_app.py
 ```
 All endpoints and real attack classifications pass with 100% accuracy.
 
@@ -184,11 +184,11 @@ python src/advanced_analytics.py   # Cross-validation, Multiclass & PCA
 ```
 
 ### Step 3: View Notebooks
-Each track is fully executed with all outputs and figures visible:
-- `notebooks/regression.ipynb`
-- `notebooks/classification.ipynb`
-- `notebooks/clustering.ipynb`
-- `IDS_ML_Project.ipynb`
+Each track is fully executed with all diagnostic outputs and figures embedded inline:
+- `notebooks/regression.ipynb` (10 regression algorithms, tuning & residual analysis)
+- `notebooks/classification.ipynb` (10 classification algorithms, ROC curves & feature importance)
+- `notebooks/clustering.ipynb` (K-Means, Agglomerative, PCA & t-SNE)
+- `IDS_ML_Project.ipynb` (Unified master notebook)
 
 ---
 
@@ -202,8 +202,8 @@ Each track is fully executed with all outputs and figures visible:
 | **Section 3.3** | Clustering Track | K-Means (Elbow) & Agglomerative (Dendrogram) | **COMPLETE** |
 | **Metrics** | Silhouette, DB, CH Indices | All 3 indices reported for both clustering models | **COMPLETE** |
 | **Visualizations** | PCA & t-SNE 2D Plots | Both linear PCA and non-linear t-SNE rendered | **COMPLETE** |
-| **Deliverable D1** | Clean, Fully-Executed Notebooks | 100% cells executed top-to-bottom with outputs | **COMPLETE** |
-| **Deliverable D2** | Meaningful Commit History | 18+ granular modular commits on GitHub | **COMPLETE** |
+| **Deliverable D1** | Clean, Fully-Executed Notebooks | 100% cells executed top-to-bottom with all 39 plots embedded inline | **COMPLETE** |
+| **Deliverable D2** | Meaningful Commit History | 19+ granular modular commits on GitHub | **COMPLETE** |
 | **Deliverable D5** | Comprehensive Documentation | Clear problem statement, results, setup & run guide | **COMPLETE** |
 | **Deliverable D8** | GUI Application (Bonus +2) | FastAPI REST backend + Streamlit dashboard | **COMPLETE** |
 
