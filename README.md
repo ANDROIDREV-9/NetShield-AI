@@ -64,6 +64,11 @@ NetShield-AI/
 |-- results/                                    # Generated diagnostic evaluation figures
 |-- tests/
 |   |-- test_app.py                             # Automated API verification test suite
+|-- REVIEW_1_PRESENTATION.md                    # Review 1 presentation slide guide
+|-- REVIEW_1_VIVA.md                            # Review 1 viva questions & answers
+|-- REVIEW_2_PRESENTATION.md                    # Review 2 presentation slide guide
+|-- REVIEW_2_VIVA.md                            # Review 2 viva questions & answers
+|-- LICENSE                                     # MIT open-source license
 |-- requirements.txt                            # Complete environment dependencies
 `-- README.md                                   # Comprehensive documentation
 ```
