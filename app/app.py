@@ -14,6 +14,8 @@ import argparse
 import subprocess
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 def main():
     parser = argparse.ArgumentParser(description="NetShield-AI Application Launcher")
@@ -24,8 +26,11 @@ def main():
     if args.api:
         print("[*] Launching NetShield-AI FastAPI Inference Engine on http://127.0.0.1:8000...")
         import uvicorn
-        from app.backend import app
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        try:
+            from app.backend import app as fastapi_app
+        except ImportError:
+            from backend import app as fastapi_app
+        uvicorn.run(fastapi_app, host="127.0.0.1", port=8000)
     else:
         frontend_path = os.path.join(PROJECT_ROOT, "app", "frontend.py")
         print(f"[*] Launching NetShield-AI Streamlit Interactive Dashboard on port {args.port}...")
