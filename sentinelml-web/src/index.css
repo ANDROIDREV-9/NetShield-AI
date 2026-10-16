@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root, [data-theme='dark'] {
+  --bg: 10 12 15; --panel: 17 20 25; --panel2: 23 27 33; --line: 38 44 53;
+  --ink: 230 233 238; --muted: 148 158 173; --faint: 100 110 125;
+  --cyan: 34 211 238; --emerald: 52 211 153; --amber: 251 191 36; --red: 248 113 113;
+  color-scheme: dark;
+}
+[data-theme='light'] {
+  --bg: 243 245 248; --panel: 255 255 255; --panel2: 246 248 250; --line: 215 221 229;
+  --ink: 20 25 33; --muted: 85 96 112; --faint: 125 135 150;
+  --cyan: 8 145 178; --emerald: 5 150 105; --amber: 180 110 0; --red: 220 38 38;
+  color-scheme: light;
+}
+html, body, #root { height: 100%; }
+body { @apply bg-bg text-ink font-sans antialiased; font-size: 14px; }
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--line)) transparent; }
+:focus-visible { outline: 2px solid rgb(var(--cyan)); outline-offset: 2px; border-radius: 4px; }
+.num { font-variant-numeric: tabular-nums; }
+.skeleton { position: relative; overflow: hidden; background: rgb(var(--panel2)); border-radius: 6px; }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--line) / .6), transparent); animation: shimmer 1.3s infinite; }
+.recharts-text { fill: rgb(var(--muted)); }
+.recharts-cartesian-grid line { stroke: rgb(var(--line)); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media print { aside, header { display: none !important; } }
