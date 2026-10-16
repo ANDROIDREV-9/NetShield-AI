@@ -54,6 +54,7 @@ ARTIFACTS = {
     "rf_regressor": None,
     "feature_metadata": {},
     "sample_records": [],
+    "models": {},
 }
 
 def load_artifacts():
@@ -85,6 +86,23 @@ def load_artifacts():
         if os.path.exists(samples_path):
             with open(samples_path, "r", encoding="utf-8") as f:
                 ARTIFACTS["sample_records"] = json.load(f)
+
+        MODEL_REGISTRY = {
+            "Random Forest": "rf_classifier.joblib",
+            "Gradient Boosting": "gradient_boosting.joblib",
+            "Decision Tree": "dt_classifier.joblib",
+            "Bagging": "bagging.joblib",
+            "AdaBoost": "adaboost.joblib",
+            "MLP": "mlp.joblib",
+            "KNN": "knn.joblib",
+            "SVC": "svc.joblib",
+            "Logistic Regression": "lr_classifier.joblib",
+            "Gaussian Naive Bayes": "gaussiannb.joblib",
+        }
+        for name, fname in MODEL_REGISTRY.items():
+            m_path = os.path.join(MODELS_DIR, fname)
+            if os.path.exists(m_path):
+                ARTIFACTS["models"][name] = joblib.load(m_path)
     except Exception as e:
         print(f"[WARN] Error loading artifacts during startup: {e}")
 
@@ -101,7 +119,7 @@ class FlowFeatures(BaseModel):
             "Bwd Packet Length Max": 1460.0
         }
     )
-    model_choice: Optional[str] = Field("Random Forest", description="Classifier choice: 'Random Forest' or 'Decision Tree'")
+    model_choice: Optional[str] = Field("Random Forest", description="Classifier choice across all 10 models (e.g. 'Random Forest', 'Gradient Boosting', 'Decision Tree', 'Bagging', 'AdaBoost', 'MLP', 'KNN', 'SVC', 'Logistic Regression', 'Gaussian Naive Bayes')")
 
 class BatchRequest(BaseModel):
     records: List[Dict[str, float]]
@@ -115,6 +133,16 @@ def healthcheck():
         "models_loaded": loaded,
         "selected_features_count": len(ARTIFACTS["selected_features"]),
         "has_regressor": ARTIFACTS["rf_regressor"] is not None,
+    }
+
+@app.get("/models")
+def get_models():
+    if not ARTIFACTS["models"]:
+        load_artifacts()
+    return {
+        "available_models": list(ARTIFACTS["models"].keys()),
+        "champion_model": "Random Forest",
+        "total_models": len(ARTIFACTS["models"]),
     }
 
 @app.get("/features")
@@ -131,6 +159,20 @@ def get_samples():
     if not ARTIFACTS["sample_records"]:
         load_artifacts()
     return {"samples": ARTIFACTS["sample_records"]}
+
+def _resolve_model(model_name: Optional[str]):
+    if not ARTIFACTS["models"]:
+        load_artifacts()
+    if not model_name:
+        return ARTIFACTS.get("rf_classifier") or ARTIFACTS.get("models", {}).get("Random Forest")
+    
+    clean_req = model_name.strip().lower()
+    for name, m in ARTIFACTS.get("models", {}).items():
+        if name.lower() == clean_req or name.lower() in clean_req or clean_req in name.lower():
+            return m
+    if "decision" in clean_req:
+        return ARTIFACTS.get("dt_classifier")
+    return ARTIFACTS.get("rf_classifier")
 
 def _prepare_vector(feature_dict: Dict[str, float]) -> np.ndarray:
     selected = ARTIFACTS["selected_features"]
@@ -165,13 +207,20 @@ def predict_classification(req: FlowFeatures):
             raise HTTPException(status_code=503, detail="Classifier model is not ready.")
 
     scaled_vec = _prepare_vector(req.features)
-    model = ARTIFACTS["rf_classifier"] if req.model_choice != "Decision Tree" else ARTIFACTS["dt_classifier"]
+    model = _resolve_model(req.model_choice)
 
     pred = int(model.predict(scaled_vec)[0])
-    probs = model.predict_proba(scaled_vec)[0] if hasattr(model, "predict_proba") else [0.0, 1.0]
-
-    benign_prob = float(probs[0])
-    attack_prob = float(probs[1]) if len(probs) > 1 else (1.0 - benign_prob)
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba(scaled_vec)[0]
+        benign_prob = float(probs[0])
+        attack_prob = float(probs[1]) if len(probs) > 1 else (1.0 - benign_prob)
+    elif hasattr(model, "decision_function"):
+        df_val = float(model.decision_function(scaled_vec)[0])
+        attack_prob = float(1.0 / (1.0 + np.exp(-df_val)))
+        benign_prob = 1.0 - attack_prob
+    else:
+        attack_prob = float(pred)
+        benign_prob = 1.0 - attack_prob
 
     if attack_prob > 0.75:
         risk = "CRITICAL"
@@ -186,7 +235,7 @@ def predict_classification(req: FlowFeatures):
         "attack_probability": round(attack_prob, 4),
         "benign_probability": round(benign_prob, 4),
         "risk_level": risk,
-        "model_used": req.model_choice,
+        "model_used": type(model).__name__,
     }
 
 @app.post("/predict/regression")
@@ -220,16 +269,23 @@ def predict_batch(req: BatchRequest):
         if ARTIFACTS["rf_classifier"] is None:
             raise HTTPException(status_code=503, detail="Classifier model is not ready.")
 
+    model = _resolve_model(req.model_choice)
     results = []
     for item in req.records:
         scaled_vec = _prepare_vector(item)
-        model = ARTIFACTS["rf_classifier"] if req.model_choice != "Decision Tree" else ARTIFACTS["dt_classifier"]
         pred = int(model.predict(scaled_vec)[0])
-        probs = model.predict_proba(scaled_vec)[0] if hasattr(model, "predict_proba") else [0.0, 1.0]
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(scaled_vec)[0]
+            p1 = float(probs[1]) if len(probs) > 1 else float(probs[0])
+        elif hasattr(model, "decision_function"):
+            df_val = float(model.decision_function(scaled_vec)[0])
+            p1 = float(1.0 / (1.0 + np.exp(-df_val)))
+        else:
+            p1 = float(pred)
         results.append({
             "prediction": "ATTACK" if pred == 1 else "BENIGN",
             "is_attack": pred,
-            "attack_probability": round(float(probs[1]), 4),
+            "attack_probability": round(p1, 4),
         })
 
     attack_count = sum(r["is_attack"] for r in results)

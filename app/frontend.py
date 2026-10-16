@@ -87,6 +87,24 @@ def load_models():
         meta_path = os.path.join(MODELS_DIR, "feature_metadata.json")
         samples_path = os.path.join(MODELS_DIR, "sample_test_records.json")
 
+        MODEL_REGISTRY = {
+            "Random Forest (Champion)": "rf_classifier.joblib",
+            "Gradient Boosting (XGB/GBM)": "gradient_boosting.joblib",
+            "Decision Tree": "dt_classifier.joblib",
+            "Bagging Ensemble": "bagging.joblib",
+            "AdaBoost": "adaboost.joblib",
+            "Multi-Layer Perceptron (MLP)": "mlp.joblib",
+            "K-Nearest Neighbors (KNN)": "knn.joblib",
+            "Support Vector Machine (SVC)": "svc.joblib",
+            "Logistic Regression": "lr_classifier.joblib",
+            "Gaussian Naive Bayes": "gaussiannb.joblib",
+        }
+        artifacts["models"] = {}
+        for name, fname in MODEL_REGISTRY.items():
+            m_path = os.path.join(MODELS_DIR, fname)
+            if os.path.exists(m_path):
+                artifacts["models"][name] = joblib.load(m_path)
+
         if os.path.exists(scaler_path): artifacts["scaler"] = joblib.load(scaler_path)
         if os.path.exists(feat_path): artifacts["selected_features"] = joblib.load(feat_path)
         if os.path.exists(reg_feat_path): artifacts["reg_features"] = joblib.load(reg_feat_path)
@@ -116,9 +134,14 @@ app_mode = st.sidebar.radio(
     ["🔍 Live Flow Inspector", "📂 Batch Log File Parsing", "📊 Benchmark & Analytics", "ℹ️ Project Info"]
 )
 
+available_models = list(artifacts.get("models", {}).keys())
+if not available_models:
+    available_models = ["Random Forest (Champion)", "Decision Tree"]
+
 model_choice = st.sidebar.selectbox(
-    "Classifier Engine",
-    ["Random Forest (Production)", "Decision Tree (Fast)"]
+    "Classifier Engine (All 10 Models)",
+    available_models,
+    index=0
 )
 
 st.sidebar.markdown("---")
@@ -198,9 +221,16 @@ if app_mode == "🔍 Live Flow Inspector":
         scaled_vec = scaler.transform(vec)
 
         # Run Classifier
-        clf = artifacts["rf_cls"] if "Random Forest" in model_choice else artifacts["dt_cls"]
+        clf = artifacts.get("models", {}).get(model_choice, artifacts.get("rf_cls"))
         pred = int(clf.predict(scaled_vec)[0])
-        probs = clf.predict_proba(scaled_vec)[0] if hasattr(clf, "predict_proba") else [0.0, 1.0]
+        if hasattr(clf, "predict_proba"):
+            probs = clf.predict_proba(scaled_vec)[0]
+        elif hasattr(clf, "decision_function"):
+            df_val = float(clf.decision_function(scaled_vec)[0])
+            p1 = 1.0 / (1.0 + np.exp(-df_val))
+            probs = [1.0 - p1, p1]
+        else:
+            probs = [0.0, 1.0] if pred == 1 else [1.0, 0.0]
 
         # Run Regressor
         reg = artifacts.get("rf_reg")
@@ -285,9 +315,15 @@ elif app_mode == "📂 Batch Log File Parsing":
                         aligned_df[feat] = float(meta.get(feat, {}).get("median", 0.0))
 
                 scaled_batch = scaler.transform(aligned_df)
-                clf = artifacts["rf_cls"] if "Random Forest" in model_choice else artifacts["dt_cls"]
+                clf = artifacts.get("models", {}).get(model_choice, artifacts.get("rf_cls"))
                 preds = clf.predict(scaled_batch)
-                probs = clf.predict_proba(scaled_batch)[:, 1] if hasattr(clf, "predict_proba") else preds
+                if hasattr(clf, "predict_proba"):
+                    probs = clf.predict_proba(scaled_batch)[:, 1]
+                elif hasattr(clf, "decision_function"):
+                    df_vals = clf.decision_function(scaled_batch)
+                    probs = 1.0 / (1.0 + np.exp(-df_vals))
+                else:
+                    probs = preds.astype(float)
 
                 df_batch["Prediction"] = np.where(preds == 1, "ATTACK", "BENIGN")
                 df_batch["Threat_Confidence"] = np.round(probs, 4)
@@ -339,26 +375,29 @@ elif app_mode == "📊 Benchmark & Analytics":
         st.dataframe(reg_table, use_container_width=True)
 
     with tab2:
-        st.markdown("#### 🛡️ Classification Track Performance")
+        st.markdown("#### 🛡️ Consolidated 10-Algorithm Classification Benchmark (Deliverable D6)")
         clf_table = pd.DataFrame([
-            {"Algorithm": "Random Forest Classifier", "Accuracy": 0.9998, "Precision": 0.9998, "Recall": 0.9998, "F1-Score": 0.9998, "ROC-AUC": 0.9999},
-            {"Algorithm": "XGBoost Classifier", "Accuracy": 0.9996, "Precision": 0.9996, "Recall": 0.9996, "F1-Score": 0.9996, "ROC-AUC": 0.9998},
-            {"Algorithm": "K-Nearest Neighbors", "Accuracy": 0.9934, "Precision": 0.9933, "Recall": 0.9934, "F1-Score": 0.9933, "ROC-AUC": 0.9942},
-            {"Algorithm": "Decision Tree Classifier", "Accuracy": 0.9914, "Precision": 0.9915, "Recall": 0.9914, "F1-Score": 0.9914, "ROC-AUC": 0.9959},
-            {"Algorithm": "Gaussian Naive Bayes", "Accuracy": 0.8654, "Precision": 0.8669, "Recall": 0.8654, "F1-Score": 0.8661, "ROC-AUC": 0.8300},
-            {"Algorithm": "Support Vector Classifier (SVC)", "Accuracy": 0.8644, "Precision": 0.9196, "Recall": 0.8644, "F1-Score": 0.8772, "ROC-AUC": 0.9667},
-            {"Algorithm": "Logistic Regression", "Accuracy": 0.8253, "Precision": 0.9076, "Recall": 0.8253, "F1-Score": 0.8443, "ROC-AUC": 0.9440},
+            {"Rank": 1, "Algorithm": "Random Forest Classifier", "Curriculum Scope": "Review 2 (Part B)", "Accuracy": 0.9958, "Precision": 0.9804, "Recall": 0.9953, "Weighted F1": 0.9878, "ROC-AUC": 0.9999},
+            {"Rank": 2, "Algorithm": "Gradient Boosting (XGB/GBM)", "Curriculum Scope": "Review 2 (Part B)", "Accuracy": 0.9951, "Precision": 0.9742, "Recall": 0.9974, "Weighted F1": 0.9857, "ROC-AUC": 0.9999},
+            {"Rank": 3, "Algorithm": "Decision Tree Classifier", "Curriculum Scope": "Review 1 (Part A)", "Accuracy": 0.9946, "Precision": 0.9746, "Recall": 0.9941, "Weighted F1": 0.9843, "ROC-AUC": 0.9990},
+            {"Rank": 4, "Algorithm": "Bagging Classifier (DT Base)", "Curriculum Scope": "Review 2 (Part B)", "Accuracy": 0.9945, "Precision": 0.9737, "Recall": 0.9945, "Weighted F1": 0.9840, "ROC-AUC": 0.9995},
+            {"Rank": 5, "Algorithm": "K-Nearest Neighbors (k=7)", "Curriculum Scope": "Review 1 (Part A)", "Accuracy": 0.9831, "Precision": 0.9481, "Recall": 0.9520, "Weighted F1": 0.9501, "ROC-AUC": 0.9959},
+            {"Rank": 6, "Algorithm": "MLP Neural Network", "Curriculum Scope": "Review 2 (Part B)", "Accuracy": 0.9774, "Precision": 0.8915, "Recall": 0.9864, "Weighted F1": 0.9365, "ROC-AUC": 0.9971},
+            {"Rank": 7, "Algorithm": "Support Vector Classifier (SVC)", "Curriculum Scope": "Review 1 (Part A)", "Accuracy": 0.9599, "Precision": 0.8402, "Recall": 0.9414, "Weighted F1": 0.8879, "ROC-AUC": 0.9854},
+            {"Rank": 8, "Algorithm": "AdaBoost Classifier", "Curriculum Scope": "Review 2 (Part B)", "Accuracy": 0.9476, "Precision": 0.7937, "Recall": 0.9315, "Weighted F1": 0.8571, "ROC-AUC": 0.9726},
+            {"Rank": 9, "Algorithm": "Logistic Regression", "Curriculum Scope": "Review 1 (Part A)", "Accuracy": 0.9079, "Precision": 0.6587, "Recall": 0.9431, "Weighted F1": 0.7757, "ROC-AUC": 0.9726},
+            {"Rank": 10, "Algorithm": "Gaussian Naive Bayes", "Curriculum Scope": "Review 1 (Part A)", "Accuracy": 0.2566, "Precision": 0.1840, "Recall": 0.9907, "Weighted F1": 0.3103, "ROC-AUC": 0.6403},
         ])
         st.dataframe(clf_table, use_container_width=True)
 
     with tab3:
-        st.markdown("#### 🖼️ Diagnostic Plots from Pipeline")
-        p_files = [f for f in os.listdir(PROJECT_ROOT) if f.startswith("plot_") and f.endswith(".png")]
+        st.markdown("#### 🖼️ Diagnostic Benchmark Figures")
+        p_files = [f for f in sorted(os.listdir(RESULTS_DIR)) if f.endswith(".png")] if os.path.exists(RESULTS_DIR) else []
         if p_files:
             sel_plot = st.selectbox("Select Generated Visualization:", p_files)
-            st.image(os.path.join(PROJECT_ROOT, sel_plot), use_container_width=True)
+            st.image(os.path.join(RESULTS_DIR, sel_plot), use_container_width=True)
         else:
-            st.info("No plot PNGs found in root directory.")
+            st.info("No plot PNGs found in results directory.")
 
 # =========================================================================
 # MODE 4: PROJECT INFO
