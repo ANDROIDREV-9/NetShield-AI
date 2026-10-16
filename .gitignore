@@ -18,9 +18,8 @@ build/
 *.csv
 *.pcap
 
-# ── Trained models — binary artifacts ─────────────────────────────────────────
+# ── Trained models — binary artifacts (uncompressed raw formats) ─────────────
 models/*.pkl
-models/*.joblib
 models/*.h5
 models/*.pt
 

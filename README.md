@@ -70,6 +70,7 @@ NetShield-AI/
 |-- REVIEW_2_VIVA.md                            # Review 2 viva questions & answers
 |-- LICENSE                                     # MIT open-source license
 |-- requirements.txt                            # Complete environment dependencies
+|-- streamlit_app.py                            # Streamlit Community Cloud entrypoint
 `-- README.md                                   # Comprehensive documentation
 ```
 
@@ -140,7 +141,7 @@ The project includes a production-grade interactive GUI designed with modern sof
 - **Backend (FastAPI):** High-speed asynchronous REST API providing validation, input scaling, and sub-millisecond model predictions.
 - **Frontend (Streamlit):** Security Operations Center (SOC) dashboard allowing live payload testing, model switching, threshold adjustment, and risk analysis.
 
-### Launching the Application
+### Launching the Application Locally
 
 1. **Option A — Unified Single-Command Launcher:**
 ```bash
@@ -156,7 +157,19 @@ uvicorn app.backend:app --host 0.0.0.0 --port 8000 --reload
 streamlit run app/frontend.py
 ```
 
-Access the dashboard at **http://localhost:8501** (API documentation available at **http://localhost:8000/docs**).
+Access the local dashboard at **http://localhost:8501** (API documentation available at **http://localhost:8000/docs**).
+
+### Deploying on Streamlit Community Cloud (Public Web URL)
+
+The application is pre-configured for 1-click deployment on **Streamlit Community Cloud**:
+1. Navigate to **[share.streamlit.io](https://share.streamlit.io/)** and sign in with your GitHub account.
+2. Click **"New app"**.
+3. Configure the deployment settings:
+   - **Repository:** `ANDROIDREV-9/NetShield-AI`
+   - **Branch:** `master`
+   - **Main file path:** `streamlit_app.py`
+4. Click **"Deploy!"**.
+Streamlit Cloud automatically provisions the container, installs dependencies from `requirements.txt`, loads the pre-trained models from `models/`, and assigns a live public URL (e.g., `https://netshield-ai.streamlit.app/`).
 
 ### Automated App Testing
 Run the test suite to verify end-to-end functionality:
